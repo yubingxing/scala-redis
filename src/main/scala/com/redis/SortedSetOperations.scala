@@ -47,18 +47,26 @@ trait SortedSetOperations { self: Redis =>
                        minInclusive: Boolean = true,
                        max: Double = Double.PositiveInfinity,
                        maxInclusive: Boolean = true,
-                       limit: Option[(Int, Int)])(implicit format: Format, parse: Parse[A]): Option[List[A]] = {
+                       limit: Option[(Int, Int)],
+                       sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]): Option[List[A]] = {
 
       val limitEntries = if(!limit.isEmpty) { 
         "LIMIT" :: limit.toList.flatMap(l => List(l._1, l._2))
       } else { 
         List()
       }
-      send("ZRANGEBYSCORE", key :: 
-        Format.formatDouble(min, minInclusive) :: 
-        Format.formatDouble(max, maxInclusive) ::
-        limitEntries
-      )(asList.map(_.flatten))
+      // send("ZRANGEBYSCORE", key :: 
+        // Format.formatDouble(min, minInclusive) :: 
+        // Format.formatDouble(max, maxInclusive) ::
+        // limitEntries
+      // )(asList.map(_.flatten))
+      val minParam = Format.formatDouble(min, minInclusive)
+      val maxParam = Format.formatDouble(max, maxInclusive)
+      val params = sortAs match {
+        case ASC => ("ZRANGEBYSCORE", key :: minParam :: maxParam :: limitEntries)
+        case DESC => ("ZREVRANGEBYSCORE", key :: maxParam :: minParam :: limitEntries)
+      }
+      send(params._1, params._2)(asList.map(_.flatten))
    }
 
   def zrangebyscoreWithScore[A](key: Any,
@@ -93,6 +101,14 @@ trait SortedSetOperations { self: Redis =>
 
   def zunionstoreWeighted(dstKey: Any, kws: Iterable[Product2[Any,Double]], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
     send("ZUNIONSTORE", (Iterator(dstKey, kws.size) ++ kws.iterator.map(_._1) ++ Iterator.single("WEIGHTS") ++ kws.iterator.map(_._2) ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
+
+  // ZINTERSTORE
+  //
+  def zinterstore(dstKey: Any, keys: Iterable[Any], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
+    send("ZINTERSTORE", (Iterator(dstKey, keys.size) ++ keys.iterator ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
+
+  def zinterstoreWeighted(dstKey: Any, kws: Iterable[Product2[Any,Double]], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
+    send("ZINTERSTORE", (Iterator(dstKey, kws.size) ++ kws.iterator.map(_._1) ++ Iterator.single("WEIGHTS") ++ kws.iterator.map(_._2) ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
 
   // ZCOUNT
   //
