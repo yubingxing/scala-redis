@@ -117,6 +117,7 @@ private [redis] trait R extends Reply {
   }
 
   def asInt: Option[Int] =  receive(integerReply orElse queuedReplyInt)
+  def asDouble: Option[Double] = receive(bulkReply).map(b => new String(b, "UTF-8").toDouble)
 
   def asBoolean: Boolean = receive(integerReply orElse singleLineReply) match {
     case Some(n: Int) => n > 0

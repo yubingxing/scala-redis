@@ -114,6 +114,12 @@ class StringOperationsSpec extends Spec
         r.incrby("anshin-4", 5)
       } catch { case ex => ex.getMessage should startWith("ERR value is not an integer") }
     }
+    it("should increment by 1.2 for a key that contains a floating point number") {
+      try {
+        r.set("anshin-5", 6.1d)
+        r.incrbyFloat("anshin-5", 1.2d) should equal(Some(7.3d))
+      } catch { case ex => ex.getMessage should startWith("ERR value is not a float") }
+    }
   }
 
   describe("decr") {
