@@ -1,5 +1,10 @@
 # Redis Scala client
 
+## How to use the lib
+
+Add the under code into build.sbt file in your project root path.
+libraryDependencies += "com.redis" % "scala-redis" % "1.0" from "http://cloud.github.com/downloads/yubingxing/scala-redis/scala-redis_2.9.2-1.0.jar"
+
 ## Key features of the library
 
 - Native Scala types Set and List responses.
