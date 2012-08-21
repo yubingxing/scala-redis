@@ -2,8 +2,19 @@ package com.redis
 
 import serialization._
 
+  // SORT
+  // sort keys in a set, and optionally pull values for them
 trait Operations { self: Redis =>
-
+  def sort[A](key:String, limit:Option[Pair[Int, Int]] = None, desc:Boolean = false, alpha:Boolean = false, by:Option[String] = None, get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
+    val commands:List[Any] =
+      List(List(key), limit.map(l => List("LIMIT", l._1, l._2)).getOrElse(Nil)
+      , (if (desc) List("DESC") else Nil)
+      , (if (alpha) List("ALPHA") else Nil)
+      , by.map(b => List("BY", b)).getOrElse(Nil)
+      , get.map(g => List("GET", g)).flatMap(x=>x)
+      ).flatMap(x=>x)
+    send("SORT", commands)(asList)
+  }
   // KEYS
   // returns all the keys matching the glob-style pattern.
   def keys[A](pattern: Any = "*")(implicit format: Format, parse: Parse[A]): Option[List[Option[A]]] =
@@ -46,8 +57,13 @@ trait Operations { self: Redis =>
 
   // EXPIRE (key, expiry)
   // sets the expire time (in sec.) for the specified key.
-  def expire(key: Any, expiry: Int)(implicit format: Format): Boolean =
-    send("EXPIRE", List(key, expiry))(asBoolean)
+  def expire(key: Any, ttl: Int)(implicit format: Format): Boolean =
+    send("EXPIRE", List(key, ttl))(asBoolean)
+
+  // TTL (key)
+  // returns the remaining time to live of a key that has a timeout
+  def ttl(key: Any)(implicit format: Format): Option[Int] =
+    send("TTL", List(key))(asInt)
 
   // SELECT (index)
   // selects the DB to connect, defaults to 0 (zero).
